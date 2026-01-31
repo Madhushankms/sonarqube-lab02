@@ -1,4 +1,4 @@
-package main.java.com.example;
+package com.example;   // Make sure this matches your folder path
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -15,7 +15,7 @@ public class UserService {
     private static final Logger logger =
             LoggerFactory.getLogger(UserService.class);
 
-    // Database configuration (NO hardcoded password)
+    // Database configuration (No hardcoded credentials)
     private static final String DB_URL =
             "jdbc:mysql://localhost/db";
 
@@ -25,13 +25,16 @@ public class UserService {
     private static final String DB_PASSWORD =
             System.getenv("DB_PASSWORD");
 
-    // Find user (Secure + Closed Resources)
+    /**
+     * Find user by username
+     */
     public void findUser(String username) throws SQLException {
 
+        // Use column names instead of SELECT *
         String query =
-                "SELECT * FROM users WHERE name = ?";
+                "SELECT id, name, email, role FROM users WHERE name = ?";
 
-        // try-with-resources closes Connection, Statement, ResultSet automatically
+        // try-with-resources auto closes resources
         try (Connection conn =
                      DriverManager.getConnection(
                              DB_URL, DB_USER, DB_PASSWORD);
@@ -44,15 +47,28 @@ public class UserService {
             try (ResultSet rs = ps.executeQuery()) {
 
                 if (rs.next()) {
-                    logger.info("User found: {}", username);
+
+                    int id = rs.getInt("id");
+                    String name = rs.getString("name");
+                    String email = rs.getString("email");
+                    String role = rs.getString("role");
+
+                    logger.info(
+                            "User found: id={}, name={}, email={}, role={}",
+                            id, name, email, role
+                    );
+
                 } else {
+
                     logger.warn("User not found: {}", username);
                 }
             }
         }
     }
 
-    // Delete user (Secure + No Generic Exception)
+    /**
+     * Delete user by username
+     */
     public void deleteUser(String username) throws SQLException {
 
         String query =
@@ -70,9 +86,12 @@ public class UserService {
             int rows = ps.executeUpdate();
 
             if (rows > 0) {
+
                 logger.warn("User deleted: {}", username);
+
             } else {
-                logger.info("No user to delete: {}", username);
+
+                logger.info("No user found to delete: {}", username);
             }
         }
     }
